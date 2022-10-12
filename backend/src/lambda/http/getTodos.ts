@@ -1,36 +1,25 @@
-import 'source-map-support/register';
-import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda';
-import { getTodos } from '../../businessLogic/todos';
-import { createLogger } from '../../utils/logger';
-import { getToken } from '../../utils/getJwt';
-import { TodoItem } from '../../models/Todo.d';
+import 'source-map-support/register'
 
-const logger = createLogger('getTodos');
+import {APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler} from 'aws-lambda';
+import {getAllToDo} from "../../businessLogic/ToDo";
 
-export const handler: APIGatewayProxyHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
-  logger.info('Processing GetTodos event...');
-  const jwtToken: string = getToken(event);
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': true
-  };
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    // TODO: Get all TODO items for a current user
+    console.log("Processing Event ", event);
+    const authorization = event.headers.Authorization;
+    const split = authorization.split(' ');
+    const jwtToken = split[1];
 
-  try {
-    const todoList: TodoItem[] = await getTodos(jwtToken);
-    logger.info('Successfully retrieved todolist');
+    const toDos = await getAllToDo(jwtToken);
+
     return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ todoList })
-    };
-  } catch (error) {
-    logger.error(`Error: ${error.message}`);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error })
-    };
-  }
+        statusCode: 200,
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            'Access-Control-Allow-Credentials': true
+        },
+        body: JSON.stringify({
+            "items": toDos,
+        }),
+    }
 };
