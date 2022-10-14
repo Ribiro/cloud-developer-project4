@@ -1,282 +1,227 @@
-# TODO: Change the name of the org
 org: ribiro
-app: ribiro-todo-app-project
-service: ribiro-todo-app-project
-
+app: ribiro-app
+service: ribiro-app
+frameworkVersion: "3"
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
-
+  - serverless-plugin-aws-alerts
+  - serverless-plugin-metric
+custom:
+  tableName: "users-table-${sls:stage}"
+  metrics:
+    - name: AppLevelMetrics
+      pattern: "{ $.statusCode != 200 }"
+  alerts:
+    stages:
+      - dev
+    topics:
+      alarm:
+        topic: ${self:provider.stage}-alerts-alarm
+        notifications:
+          - protocol: email
+            endpoint: ribirodenis05@gmail.com
+    alarms:
+      - functionErrors
+      - functionThrottles
 provider:
   name: aws
-  runtime: nodejs12.x
-  lambdaHashingVersion: '20201221'
-
+  runtime: nodejs14.x
+  lambdaHashingVersion: "20201221"
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
-
   tracing:
     lambda: true
     apiGateway: true
-
-  # Use these variables in the functions and resouorces section below. For example,
-  # ${self:provider.environment.ATTACHMENT_S3_BUCKET}
   environment:
+    USERS_TABLE: ${self:custom.tableName}
     TODOS_TABLE: Todos-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
-    ATTACHMENT_S3_BUCKET: serverless-141026071860-ribiro-serverless-todo-images-${self:provider.stage}
+    ATTACHMENT_S3_BUCKET: serverless-c4-todo-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-
   logs:
     # Enable API Gateway logs
-    restApi: true
+    RestApiLogs: true
 
 functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
-
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property for performing Actions on DynamoDB
   GetTodos:
     handler: src/lambda/http/getTodos.handler
+    tracing: "true" # overrides provider settings (opt out)
     events:
       - http:
           method: get
           path: todos
           cors: true
           authorizer: Auth
+
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_CREATED_AT_INDEX}
-      - Effect: Allow
-        Action:
-          - xray:GetSamplingRules
-          - xray:GetSamplingTargets
-          - xray:GetSamplingStatisticSummaries
-          - xray:BatchGetTraces
-          - xray:GetServiceGraph
-          - xray:GetTraceGraph
-          - xray:GetTraceSummaries
-          - xray:GetGroups
-          - xray:GetGroup
           - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
         Resource:
-          - '*'
-
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
-  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
-  # To validate incoming HTTP requests, we have provided the request schemas in function definition below.
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - "*"
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
+    tracing: "true" # overrides provider settings (opt out)
     events:
       - http:
           method: post
           path: todos
-          cors: true
-          authorizer: Auth
           request:
             schemas:
               application/json: ${file(models/create-todo-model.json)}
+          authorizer: Auth
+          cors: true
+
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:PutObject
           - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: Allow
-        Action:
-          - xray:GetSamplingRules
-          - xray:GetSamplingTargets
-          - xray:GetSamplingStatisticSummaries
-          - xray:BatchGetTraces
-          - xray:GetServiceGraph
-          - xray:GetTraceGraph
-          - xray:GetTraceSummaries
-          - xray:GetGroups
-          - xray:GetGroup
           - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
         Resource:
-          - '*'
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - "*"
+
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
+    tracing: "true" # overrides provider settings (opt out)
     events:
       - http:
           method: patch
           path: todos/{todoId}
-          cors: true
-          authorizer: Auth
           request:
             schemas:
               application/json: ${file(models/update-todo-model.json)}
+          cors: true
+          authorizer: Auth
+
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:UpdateItem
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: Allow
-        Action:
-          - xray:GetSamplingRules
-          - xray:GetSamplingTargets
-          - xray:GetSamplingStatisticSummaries
-          - xray:BatchGetTraces
-          - xray:GetServiceGraph
-          - xray:GetTraceGraph
-          - xray:GetTraceSummaries
-          - xray:GetGroups
-          - xray:GetGroup
           - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
         Resource:
-          - '*'
-
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - "*"
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
+    tracing: "true" # overrides provider settings (opt out)
     events:
       - http:
           method: delete
           path: todos/{todoId}
           cors: true
-          authorizer: Auth
+
     iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:DeleteItem
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: Allow
-        Action:
-          - xray:GetSamplingRules
-          - xray:GetSamplingTargets
-          - xray:GetSamplingStatisticSummaries
-          - xray:BatchGetTraces
-          - xray:GetServiceGraph
-          - xray:GetTraceGraph
-          - xray:GetTraceSummaries
-          - xray:GetGroups
-          - xray:GetGroup
           - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
         Resource:
-          - '*'
-
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - "*"
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
+    tracing: "true" # overrides provider settings (opt out)
     events:
       - http:
           method: post
-          path: todos/{todoId}/attachment
+          path: todos/attachment
           cors: true
           authorizer: Auth
+
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - s3:PutObject
-        Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*
-      - Effect: Allow
-        Action:
+          - dynamodb:PutObject
+          - dynamodb:PutItem
+          - dynamodb:Query
           - dynamodb:UpdateItem
-          - dynamodb:GetItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: Allow
-        Action:
-          - xray:GetSamplingRules
-          - xray:GetSamplingTargets
-          - xray:GetSamplingStatisticSummaries
-          - xray:BatchGetTraces
-          - xray:GetServiceGraph
-          - xray:GetTraceGraph
-          - xray:GetTraceSummaries
-          - xray:GetGroups
-          - xray:GetGroup
           - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
         Resource:
-          - '*'
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+          - "*"
 
 resources:
   Resources:
-    # Add necessary AWS resources. You will need at least the following AWS resources
-    # TODO: Fill the properties
-    # Feel free to change the names as you like.
     GatewayResponseDefault4XX:
-      Type: AWS::ApiGateway::GatewayResponse
+      Type: "AWS::ApiGateway::GatewayResponse"
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
         ResponseType: DEFAULT_4XX
         RestApiId:
-          Ref: ApiGatewayRestApi
-
-    # TODO: Create a DynamoDB table with local secondary index and a composite key
+          Ref: "ApiGatewayRestApi"
     TodosTable:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
+          - AttributeName: refKey
+            AttributeType: S
           - AttributeName: todoId
             AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-          - AttributeName: createdAt
-            AttributeType: S
         KeySchema:
-          - AttributeName: userId
+          - AttributeName: refKey
             KeyType: HASH
           - AttributeName: todoId
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
-        GlobalSecondaryIndexes:
+        LocalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODOS_CREATED_AT_INDEX}
             KeySchema:
-              - AttributeName: userId
+              - AttributeName: refKey
                 KeyType: HASH
-              - AttributeName: createdAt
+              - AttributeName: todoId
                 KeyType: RANGE
             Projection:
-              ProjectionType: ALL
-
-    # TODO: Complete the bucket properties below.
-    # Do not forget to add the CorsConfiguration property
+              ProjectionType: ALL # What attributes will be copied to an index
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
+        BucketName: ribiroattachementseou7xk8j16a4
+        # AccessControl: PublicRead
         CorsConfiguration:
           CorsRules:
-            - AllowedOrigins:
-                - '*'
-              AllowedHeaders:
-                - '*'
+            - AllowedHeaders:
+                - "*"
               AllowedMethods:
                 - GET
                 - PUT
                 - POST
                 - DELETE
                 - HEAD
+              AllowedOrigins:
+                - "*"
               MaxAge: 3000
 
-    # TODO: Complete the policy below and attach it to the bucket defined above
-    # For cross referencing the name of the bucket, use "!Ref AttachmentsBucket"
-    BucketPolicy:
+    UploadRole:
       Type: AWS::S3::BucketPolicy
       Properties:
-        Properties:
-        PolicyDocument:
-          Id: MyPolicy
-          Version: '2012-10-17'
-          Statement:
-            - Sid: PublicReadForGetBucketObjects
-              Effect: Allow
-              Principal: '*'
-              Action: 's3:GetObject'
-              Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Action:
+                - "s3:GetObject"
+                - "s3:PutObjectAcl"
+                - "s3:PutObject"
+              Effect: Allow
+              Resource: !Join
+                - ""
+                - - "arn:aws:s3:::"
+                  - !Ref AttachmentsBucket
+                  - /*
+              Principal: "*"

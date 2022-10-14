@@ -3,5 +3,7 @@
  */
 export interface CreateTodoRequest {
   name: string
-  dueDate: string
+  dueDate: string,
+  refKey?: string,
+  userId: String
 }

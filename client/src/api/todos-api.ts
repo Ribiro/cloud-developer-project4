@@ -14,20 +14,28 @@ export async function getTodos(idToken: string): Promise<Todo[]> {
     },
   })
   console.log('Todos:', response.data)
-  return response.data.items
+  return response.data
 }
 
 export async function createTodo(
   idToken: string,
   newTodo: CreateTodoRequest
 ): Promise<Todo> {
-  const response = await Axios.post(`${apiEndpoint}/todos`,  JSON.stringify(newTodo), {
+  newTodo.todoId = `${(Math.random() + 1).toString(36).substring(2)}`
+  newTodo.userId = `${(Math.random() + 1).toString(36).substring(2)}`
+  newTodo.createdAt = newTodo.dueDate
+  newTodo.attachmentUrl = ""
+  newTodo.done = false
+  console.log('about to create todo now..', newTodo)
+  const response = await Axios.post(`${apiEndpoint}/todos`, JSON.stringify(newTodo), {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`
     }
+
   })
-  return response.data.item
+  console.log("can create item", response.data)
+  return response.data
 }
 
 export async function patchTodo(
@@ -57,17 +65,24 @@ export async function deleteTodo(
 
 export async function getUploadUrl(
   idToken: string,
-  todoId: string
+  todoId: string,
+  imageType: string
 ): Promise<string> {
-  const response = await Axios.post(`${apiEndpoint}/todos/${todoId}/attachment`, '', {
+  const response = await Axios.post(`${apiEndpoint}/todos/attachment?id=${todoId}&&type=${imageType}`, '', {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`
     }
   })
-  return response.data.uploadUrl
+  console.log("upload URL:", response.data.url)
+  return response.data.url
 }
 
-export async function uploadFile(uploadUrl: string, file: Buffer): Promise<void> {
-  await Axios.put(uploadUrl, file)
+export async function uploadFile(uploadUrl: string, file: Buffer, imageType: string): Promise<void> {
+
+  await Axios.put(uploadUrl, file, {
+    headers: {
+      'Content-Type': imageType,
+    }
+  })
 }

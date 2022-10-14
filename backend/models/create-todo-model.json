@@ -3,17 +3,39 @@
   "title": "group",
   "type": "object",
   "properties": {
-    "name": {
+    "todoName": {
       "type": "string",
       "minLength": 1
     },
     "dueDate": {
       "type": "string"
+    },
+    "refKey": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "done": {
+      "type": "boolean"
+    },
+    "todoId": {
+      "type": "string"
+    },
+    "attachmentUrl": {
+      "type": "string"
     }
   },
   "required": [
-    "name",
-    "dueDate"
+    "todoName",
+    "dueDate",
+    "createdAt",
+    "todoId",
+    "done",
+    "attachmentUrl"
   ],
   "additionalProperties": false
 }

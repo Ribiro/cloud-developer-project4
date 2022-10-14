@@ -41,6 +41,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   }
 
   onEditButtonClick = (todoId: string) => {
+    console.log("about to edit")
     this.props.history.push(`/todos/${todoId}/edit`)
   }
 
@@ -48,8 +49,8 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     try {
       const dueDate = this.calculateDueDate()
       const newTodo = await createTodo(this.props.auth.getIdToken(), {
-        name: this.state.newTodoName,
-        dueDate
+        todoName: this.state.newTodoName,
+        dueDate,
       })
       this.setState({
         todos: [...this.state.todos, newTodo],
@@ -75,7 +76,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     try {
       const todo = this.state.todos[pos]
       await patchTodo(this.props.auth.getIdToken(), todo.todoId, {
-        name: todo.name,
+        name: todo.todoName,
         dueDate: todo.dueDate,
         done: !todo.done
       })
@@ -142,7 +143,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     if (this.state.loadingTodos) {
       return this.renderLoading()
     }
-
+    if (this.state.todos == undefined) return
     return this.renderTodosList()
   }
 
@@ -169,7 +170,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
                 />
               </Grid.Column>
               <Grid.Column width={10} verticalAlign="middle">
-                {todo.name}
+                {todo.todoName}
               </Grid.Column>
               <Grid.Column width={3} floated="right">
                 {todo.dueDate}
@@ -177,7 +178,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
               <Grid.Column width={1} floated="right">
                 <Button
                   icon
-                  color="blue"
+                  color="yellow"
                   onClick={() => this.onEditButtonClick(todo.todoId)}
                 >
                   <Icon name="pencil" />
