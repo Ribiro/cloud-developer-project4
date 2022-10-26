@@ -75,11 +75,27 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   onTodoCheck = async (pos: number) => {
     try {
       const todo = this.state.todos[pos]
-      // await patchTodo(this.props.auth.getIdToken(), todo.todoId, {
-      //   name: todo.todoName,
+      console.log(todo)
+      const token = this.props.auth.getIdToken()
+      const todoId = todo.todoId
+      console.log("I've reached here!")
+
+      // const updatedTodo = {
+      //   attachmentUrl: todo.attachmentUrl,
+      //   createdAt: todo.createdAt,
+      //   done: !todo.done,
       //   dueDate: todo.dueDate,
-      //   done: !todo.done
-      // })
+      //   todoId: todo.todoId,
+      //   todoName: todo.todoName,
+      //   userId: "google-oauth2|113445773847777337727"
+      // }
+      // console.log(updatedTodo)
+      // console.log("End of testing")
+      await patchTodo(token, todoId, {
+        name: todo.todoName,
+        dueDate: todo.dueDate,
+        done: !todo.done
+      })
       this.setState({
         todos: update(this.state.todos, {
           [pos]: { done: { $set: !todo.done } }
