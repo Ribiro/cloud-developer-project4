@@ -92,7 +92,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
       // console.log(updatedTodo)
       // console.log("End of testing")
       await patchTodo(token, todoId, {
-        todoName: todo.todoName,
+        name: todo.todoName,
         dueDate: todo.dueDate,
         done: !todo.done
       })
