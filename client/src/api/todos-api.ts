@@ -41,7 +41,7 @@ export async function createTodo(
 export async function patchTodo(
   idToken: string,
   todoId: string,
-  updatedTodo: UpdateTodoRequest
+  updatedTodo: { todoName: string; dueDate: string; done: boolean }
 ): Promise<void> {
   await Axios.patch(`${apiEndpoint}/todos/${todoId}`, JSON.stringify(updatedTodo), {
     headers: {
